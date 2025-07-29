@@ -12,8 +12,10 @@ class TrackingPageSimple extends StatefulWidget {
 }
 
 class _TrackingPageSimpleState extends State<TrackingPageSimple> {
-  String estado = 'No iniciado';
-  String ubicacionActual = 'Desconocida';
+  // Usamos un booleano para un manejo de estado más limpio
+  bool _isTracking = false; 
+  String _currentLocation = 'Aún no se ha iniciado el rastreo.';
+  String _errorMessage = '';
   Timer? _timer;
 
   @override
@@ -22,6 +24,7 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
     super.dispose();
   }
 
+  // La lógica de permisos y rastreo se mantiene intacta
   Future<void> _pedirPermisos() async {
     LocationPermission permiso = await Geolocator.checkPermission();
     if (permiso == LocationPermission.denied || permiso == LocationPermission.deniedForever) {
@@ -33,67 +36,184 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
   }
 
   Future<void> iniciarRastreo() async {
-    await _pedirPermisos();
-    setState(() {
-      estado = 'Rastreo activo';
-    });
+    try {
+      await _pedirPermisos();
+      setState(() {
+        _isTracking = true;
+        _errorMessage = '';
+        _currentLocation = 'Buscando ubicación inicial...';
+      });
 
-    // Cada 10 segundos obtiene ubicación y la sube
-    _timer = Timer.periodic(const Duration(seconds: 10), (_) async {
-      try {
-        final position = await Geolocator.getCurrentPosition();
-        setState(() {
-          ubicacionActual = '${position.latitude}, ${position.longitude}';
-        });
+      _timer = Timer.periodic(const Duration(seconds: 10), (_) async {
+        try {
+          final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+          if (mounted) {
+            setState(() {
+              _currentLocation = '${position.latitude}, ${position.longitude}';
+            });
+          }
 
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          await Supabase.instance.client.from('ubicaciones').insert({
-            'id': const Uuid().v4(),
-            'user_id': user.id,
-            'lat': position.latitude,
-            'lng': position.longitude,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null) {
+            await Supabase.instance.client.from('ubicaciones').insert({
+              'id': const Uuid().v4(),
+              'user_id': user.id,
+              'lat': position.latitude,
+              'lng': position.longitude,
+              'timestamp': DateTime.now().toIso8601String(),
+            });
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Error al obtener ubicación: $e';
+            });
+          }
         }
-      } catch (e) {
-        setState(() {
-          ubicacionActual = 'Error: $e';
-        });
-      }
-    });
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   Future<void> detenerRastreo() async {
     _timer?.cancel();
     setState(() {
-      estado = 'Rastreo detenido';
+      _isTracking = false;
+      _currentLocation = 'El rastreo ha sido detenido.';
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rastreo sencillo')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text('Estado: $estado'),
-            const SizedBox(height: 10),
-            Text('Ubicación actual: $ubicacionActual'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: iniciarRastreo,
-              child: const Text('Iniciar rastreo'),
+      appBar: AppBar(
+        title: const Text('Panel de Rastreo'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 26, 26, 26)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                // --- 1. INDICADOR VISUAL DE ESTADO ---
+                _buildStatusIndicator(),
+
+                // --- 2. TARJETA DE INFORMACIÓN DE UBICACIÓN ---
+                _buildLocationInfoCard(),
+
+                // --- 3. BOTONES DE ACCIÓN ---
+                _buildActionButtons(),
+              ],
             ),
-            ElevatedButton(
-              onPressed: detenerRastreo,
-              child: const Text('Detener rastreo'),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  // Widget para el indicador de estado
+  Widget _buildStatusIndicator() {
+    return Column(
+      children: [
+        Icon(
+          _isTracking ? Icons.gps_fixed : Icons.gps_not_fixed,
+          color: _isTracking ? Colors.greenAccent : Colors.white54,
+          size: 100,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _isTracking ? 'RASTREO ACTIVO' : 'RASTREO DETENIDO',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: _isTracking ? Colors.greenAccent : Colors.white,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget para la tarjeta de información
+  Widget _buildLocationInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ÚLTIMA UBICACIÓN REGISTRADA:',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _currentLocation,
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          if (_errorMessage.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: Colors.amberAccent, fontSize: 14),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  // Widget para los botones
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Botón de Iniciar
+        ElevatedButton.icon(
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Iniciar'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7D32),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+          onPressed: _isTracking ? null : iniciarRastreo, // Se deshabilita si ya está activo
+        ),
+        const SizedBox(width: 20),
+        // Botón de Detener
+        ElevatedButton.icon(
+          icon: const Icon(Icons.stop),
+          label: const Text('Detener'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade800,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+          onPressed: !_isTracking ? null : detenerRastreo, // Se deshabilita si no está activo
+        ),
+      ],
     );
   }
 }
