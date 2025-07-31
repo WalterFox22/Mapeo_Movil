@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ======= GALERÍA DE TERRENOS =======
 class GaleriaTerrenosPage extends StatefulWidget {
   const GaleriaTerrenosPage({super.key});
 
@@ -59,47 +60,101 @@ class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
                       : null;
               return Card(
                 elevation: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8),
-                          topRight: Radius.circular(8),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => TerrenoImagenDetallePage(terreno: t)),
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            topRight: Radius.circular(8),
+                          ),
+                          child: url != null && url.isNotEmpty
+                              ? Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      const Icon(Icons.broken_image, size: 48),
+                                )
+                              : const Icon(Icons.image_not_supported, size: 48),
                         ),
-                        child: url != null && url.isNotEmpty
-                            ? Image.network(
-                                url,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.broken_image, size: 48),
-                              )
-                            : const Icon(Icons.image_not_supported, size: 48),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Área: ${area != null ? area.toStringAsFixed(2) : "?"} m²',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            'Fecha: ${t['timestamp']?.toString().substring(0, 10) ?? ""}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Área: ${area != null ? area.toStringAsFixed(2) : "?"} m²',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            Text(
+                              'Fecha: ${t['timestamp']?.toString().substring(0, 10) ?? ""}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// ======= PÁGINA DE IMAGEN DETALLADA =======
+class TerrenoImagenDetallePage extends StatelessWidget {
+  final Map<String, dynamic> terreno;
+  const TerrenoImagenDetallePage({super.key, required this.terreno});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = terreno['img_url'] as String?;
+    final areaRaw = terreno['area'];
+    double? area = areaRaw is int ? areaRaw.toDouble() : areaRaw is double ? areaRaw : null;
+    final fecha = terreno['timestamp']?.toString().substring(0, 10) ?? "";
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Imagen del Terreno'), backgroundColor: Colors.black),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: url != null && url.isNotEmpty
+                  ? InteractiveViewer(
+                      child: Image.network(url, fit: BoxFit.contain),
+                    )
+                  : const Icon(Icons.broken_image, color: Colors.white, size: 120),
+            ),
+            Container(
+              width: double.infinity,
+              color: Colors.black87,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Área: ${area != null ? area.toStringAsFixed(2) : "?"} m²',
+                      style: const TextStyle(fontSize: 16, color: Colors.white)),
+                  Text('Fecha: $fecha', style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                  
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

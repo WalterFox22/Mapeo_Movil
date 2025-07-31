@@ -6,7 +6,8 @@ import '../mapeo/mapa_topografos_page.dart';
 import '../mapeo/terrenos_page.dart';
 import '../mapeo/tracking_page.dart';
 import '../testeo/prueba_terreno_page.dart';
-import '../mapeo/galeria_terrenos_page.dart'; // <--- Asegúrate de tener este archivo
+import '../mapeo/galeria_terrenos_page.dart'; 
+import 'mapa_area_topografos_page.dart'; 
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
@@ -194,6 +195,7 @@ class AdminHomePage extends StatelessWidget {
                   ListTile(leading: const Icon(Icons.landscape_outlined), title: const Text('Ver terrenos guardados'), onTap: () => _navigateTo(context, const TerrenosPage())),
                   ListTile(leading: const Icon(Icons.my_location), title: const Text('Probar rastreo'), onTap: () => _navigateTo(context, const TrackingPageSimple())),
                   ListTile(leading: const Icon(Icons.polyline_outlined), title: const Text('Probar polígono'), onTap: () => _navigateTo(context, const PruebaTerrenoPage())),
+                  ListTile(leading: const Icon(Icons.select_all_outlined),title: const Text('Área entre topógrafos'),onTap: () => _navigateTo(context, const AreaTopografosPage()),),
                 ],
               ),
             ),

@@ -189,132 +189,140 @@ class _PruebaTerrenoPageState extends State<PruebaTerrenoPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Prueba de Polígono con Topógrafos Simulados'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _limpiar,
-            tooltip: 'Limpiar mapa',
-          )
-        ],
-      ),
-      body: RepaintBoundary(
-        key: repaintKey,
-        child: Stack(
-          children: [
-            FlutterMap(
-              options: MapOptions(
-                center: topografosSimulados.isNotEmpty
-                    ? topografosSimulados[0]
-                    : LatLng(-1.8312, -78.1834),
-                zoom: 17,
-                onTap: _onTapMapa,
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Prueba de Polígono con Topógrafos Simulados'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _limpiar,
+          tooltip: 'Limpiar mapa',
+        )
+      ],
+    ),
+    body: Stack(
+      children: [
+        // --- SOLO esto se captura como imagen ---
+        Center(
+          child: AspectRatio(
+            aspectRatio: 1, // 1:1 cuadrado (puedes cambiarlo)
+            child: RepaintBoundary(
+              key: repaintKey,
+              child: FlutterMap(
+                options: MapOptions(
+                  center: topografosSimulados.isNotEmpty
+                      ? topografosSimulados[0]
+                      : LatLng(-1.8312, -78.1834),
+                  zoom: 17,
+                  onTap: _onTapMapa,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
+                    userAgentPackageName: 'com.example.mapeo_ec',
+                  ),
+                  MarkerLayer(
+                    markers: topografosSimulados.asMap().entries.map((entry) {
+                      int idx = entry.key;
+                      LatLng p = entry.value;
+                      return Marker(
+                        point: p,
+                        width: 50,
+                        height: 50,
+                        child: GestureDetector(
+                          onTap: () => _eliminarTopografo(idx),
+                          child: const Icon(Icons.person_pin_circle, color: Colors.red, size: 36),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  if (poligonoSimulado.isNotEmpty)
+                    PolygonLayer(
+                      polygons: [
+                        Polygon(
+                          points: poligonoSimulado,
+                          color: Colors.blue.withOpacity(0.25),
+                          borderColor: Colors.blue,
+                          borderStrokeWidth: 3,
+                        )
+                      ],
+                    ),
+                  if (poligonoSimulado.isNotEmpty)
+                    MarkerLayer(
+                      markers: poligonoSimulado
+                          .map((p) => Marker(
+                                point: p,
+                                width: 24,
+                                height: 24,
+                                child: const Icon(Icons.circle, color: Colors.blue, size: 18),
+                              ))
+                          .toList(),
+                    ),
+                ],
               ),
+            ),
+          ),
+        ),
+        // --- Tus overlays y botones quedan FUERA y NO se capturan ---
+        if (poligonoSimulado.isNotEmpty)
+          Align(
+            alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TileLayer(
-                  urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  subdomains: const ['a', 'b', 'c'],
-                  userAgentPackageName: 'com.example.mapeo_ec',
-                ),
-                MarkerLayer(
-                  markers: topografosSimulados.asMap().entries.map((entry) {
-                    int idx = entry.key;
-                    LatLng p = entry.value;
-                    return Marker(
-                      point: p,
-                      width: 50,
-                      height: 50,
-                      child: GestureDetector(
-                        onTap: () => _eliminarTopografo(idx),
-                        child: const Icon(Icons.person_pin_circle, color: Colors.red, size: 36),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                if (poligonoSimulado.isNotEmpty)
-                  PolygonLayer(
-                    polygons: [
-                      Polygon(
-                        points: poligonoSimulado,
-                        color: Colors.blue.withOpacity(0.25),
-                        borderColor: Colors.blue,
-                        borderStrokeWidth: 3,
-                      )
+                Container(
+                  margin: const EdgeInsets.only(top: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black26, blurRadius: 4),
                     ],
                   ),
-                if (poligonoSimulado.isNotEmpty)
-                  MarkerLayer(
-                    markers: poligonoSimulado
-                        .map((p) => Marker(
-                              point: p,
-                              width: 24,
-                              height: 24,
-                              child: const Icon(Icons.circle, color: Colors.blue, size: 18),
-                            ))
-                        .toList(),
+                  child: Text(
+                    'Área: ${area!.toStringAsFixed(2)} m²',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+                if (distancias.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 2),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Distancias entre puntos:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        ...distancias.asMap().entries.map((e) => Text(
+                              'Punto ${e.key + 1} - Punto ${e.key + 2}: ${e.value.toStringAsFixed(2)} m',
+                              style: const TextStyle(fontSize: 14),
+                            )),
+                      ],
+                    ),
                   ),
               ],
             ),
-            if (poligonoSimulado.isNotEmpty)
-              Align(
-                alignment: Alignment.topCenter,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 24),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 4),
-                        ],
-                      ),
-                      child: Text(
-                        'Área: ${area!.toStringAsFixed(2)} m²',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                      ),
-                    ),
-                    if (distancias.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.92),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black12, blurRadius: 2),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Distancias entre puntos:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                            ...distancias.asMap().entries.map((e) => Text(
-                                  'Punto ${e.key + 1} - Punto ${e.key + 2}: ${e.value.toStringAsFixed(2)} m',
-                                  style: const TextStyle(fontSize: 14),
-                                )),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-      floatingActionButton: topografosSimulados.length >= 3
-          ? FloatingActionButton.extended(
-              onPressed: _crearPoligonoSimuladoYSubir,
-              label: const Text("Crear polígono con topógrafos"),
-              icon: const Icon(Icons.group),
-              backgroundColor: Colors.blue,
-            )
-          : null,
-    );
-  }
+          ),
+      ],
+    ),
+    floatingActionButton: topografosSimulados.length >= 3
+        ? FloatingActionButton.extended(
+            onPressed: _crearPoligonoSimuladoYSubir,
+            label: const Text("Crear polígono con topógrafos"),
+            icon: const Icon(Icons.group),
+            backgroundColor: Colors.blue,
+          )
+        : null,
+  );
+}
+
 }
