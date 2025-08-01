@@ -16,7 +16,6 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
   bool loading = true;
   List<LatLng> poligonoActual = [];
 
-  // --- TODA TU LÓGICA SE MANTIENE INTACTA ---
   @override
   void initState() {
     super.initState();
@@ -35,16 +34,24 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
   }
 
   Future<void> cargarUbicaciones() async {
-    // ... Tu lógica de cargarUbicaciones es idéntica ...
     setState(() => loading = true);
     try {
-      final response = await Supabase.instance.client.from('ubicaciones').select('user_id, lat, lng, timestamp, users(rol, email)').order('timestamp', ascending: false);
+      final ahora = DateTime.now().toUtc();
+      final response = await Supabase.instance.client
+          .from('ubicaciones')
+          .select('user_id, lat, lng, timestamp, users(rol, email)')
+          .order('timestamp', ascending: false);
       final datos = response as List;
       final Map<String, Map<String, dynamic>> latestByUser = {};
       for (final u in datos) {
         if (u['users'] != null && u['users']['rol'] == 'topografo') {
-          if (!latestByUser.containsKey(u['user_id'])) {
-            latestByUser[u['user_id']] = u;
+          final rawFecha = u['timestamp'] ?? '';
+          final fecha = DateTime.tryParse(rawFecha)?.toUtc();
+          // Solo usuarios con ubicación en el último minuto
+          if (fecha != null && ahora.difference(fecha).inSeconds <= 60) {
+            if (!latestByUser.containsKey(u['user_id'])) {
+              latestByUser[u['user_id']] = u;
+            }
           }
         }
       }
@@ -58,13 +65,14 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
     } catch (e) {
       if (mounted) {
         setState(() => loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar ubicaciones: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar ubicaciones: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
   
   Future<void> _crearPoligonoDeTopografos() async {
-    // ... Tu lógica de _crearPoligonoDeTopografos es idéntica ...
     if (ubicaciones.length < 3) return;
     final puntos = ubicaciones.map((u) => LatLng(u['lat'] as double, u['lng'] as double)).toList();
     final user = Supabase.instance.client.auth.currentUser;
@@ -155,7 +163,6 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
               onPressed: _crearPoligonoDeTopografos,
               label: const Text("Crear polígono"),
               icon: const Icon(Icons.polyline),
-              // --- 4. BOTÓN FLOTANTE CON NUEVOS COLORES ---
               backgroundColor: colorAcento,
               foregroundColor: Colors.white,
             )

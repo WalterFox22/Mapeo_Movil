@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class AreaTopografosPage extends StatefulWidget {
   const AreaTopografosPage({super.key});
@@ -13,6 +17,9 @@ class AreaTopografosPage extends StatefulWidget {
 }
 
 class _AreaTopografosPageState extends State<AreaTopografosPage> {
+  final MapController _mapController = MapController();
+  final GlobalKey repaintKey = GlobalKey();
+  List<Map<String, dynamic>> topografos = [];
   List<LatLng> puntos = [];
   double? area;
   Timer? _timer;
@@ -31,16 +38,23 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
   }
 
   Future<void> _cargarYActualizar() async {
+    final ahora = DateTime.now().toUtc();
     final response = await Supabase.instance.client
         .from('ubicaciones')
-        .select('user_id, lat, lng, timestamp')
+        .select('user_id, lat, lng, timestamp, users(rol, email)')
         .order('timestamp', ascending: false);
 
     final Map<String, Map<String, dynamic>> ultimoPorUser = {};
     for (var row in response) {
-      final uid = row['user_id'];
-      if (!ultimoPorUser.containsKey(uid)) {
-        ultimoPorUser[uid] = row;
+      if (row['users'] != null && row['users']['rol'] == 'topografo') {
+        final rawFecha = row['timestamp'] ?? '';
+        final fecha = DateTime.tryParse(rawFecha)?.toUtc();
+        if (fecha != null && ahora.difference(fecha).inSeconds <= 60) {
+          final uid = row['user_id'];
+          if (!ultimoPorUser.containsKey(uid)) {
+            ultimoPorUser[uid] = row;
+          }
+        }
       }
     }
     final puntosNuevos = ultimoPorUser.values
@@ -48,9 +62,22 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
         .toList();
 
     setState(() {
+      topografos = ultimoPorUser.values.toList();
       puntos = puntosNuevos;
       area = puntos.length >= 3 ? _areaPoligonoMetros(puntos) : null;
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ajustarVistaMarkers());
+  }
+
+  void _ajustarVistaMarkers() {
+    if (puntos.isEmpty || !mounted) return;
+    if (puntos.length == 1) {
+      _mapController.move(puntos.first, 16);
+    } else if (puntos.length > 1) {
+      final bounds = LatLngBounds.fromPoints(puntos);
+      _mapController.fitBounds(bounds, options: const FitBoundsOptions(padding: EdgeInsets.all(80)));
+    }
   }
 
   double _areaPoligonoMetros(List<LatLng> puntos) {
@@ -68,126 +95,217 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
     return (total * R * R / 2).abs();
   }
 
-  void _mostrarDialogoArea(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.black87,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Área del polígono', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.select_all, color: Colors.amber[200], size: 48),
-            const SizedBox(height: 12),
-            Text(
-              'Área: ${area?.toStringAsFixed(2) ?? "0"} m²',
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '${puntos.length} topógrafos activos',
-              style: const TextStyle(color: Colors.white54),
-            ),
-          ],
+  // Captura la imagen del mapa real (sin overlays)
+  Future<Uint8List?> _capturarPoligonoComoImagen() async {
+    try {
+      RenderRepaintBoundary boundary =
+          repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      print('Error capturando imagen: $e');
+      return null;
+    }
+  }
+
+  Future<void> _subirImagenASupabase(Uint8List bytes) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay usuario autenticado')),
+      );
+      return;
+    }
+
+    final filename = '${const Uuid().v4()}.png';
+    final storagePath = 'terrenos/$filename';
+
+    try {
+      final response = await Supabase.instance.client.storage
+          .from('imagenesterrenos')
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
+
+      if (response == null || (response is String && response.isEmpty)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error subiendo la imagen (verifica policies y bucket)')),
+          );
+        }
+        return;
+      }
+
+      // Obtén la URL pública
+      final url = Supabase.instance.client.storage
+          .from('imagenesterrenos')
+          .getPublicUrl(storagePath);
+
+      if (url == null || url.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: URL de imagen vacía')),
+        );
+        return;
+      }
+
+      await Supabase.instance.client.from('terrenos').insert({
+        'user_id': user.id,
+        'img_url': url,
+        'area': area ?? 0,
+        'timestamp': DateTime.now().toIso8601String(),
+        'puntos': puntos
+            .map((p) => {'lat': p.latitude, 'lng': p.longitude})
+            .toList(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Terreno guardado con imagen!')),
+        );
+      }
+    } catch (e) {
+      print('Excepción final subiendo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error subiendo la imagen: $e')),
+        );
+      }
+    }
+  }
+
+  void _guardarPoligonoYSubir() async {
+    if (puntos.length < 3) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Guardando polígono... Área: ${area?.toStringAsFixed(2) ?? "?"} m²',
         ),
-        actions: [
-          TextButton(
-            child: const Text('Cerrar', style: TextStyle(color: Colors.amber)),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
       ),
     );
+    await Future.delayed(const Duration(milliseconds: 350));
+    final bytes = await _capturarPoligonoComoImagen();
+    if (bytes != null) {
+      await _subirImagenASupabase(bytes);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo capturar la imagen')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Colores temáticos
-    const colorTierra = Color(0xFF3E2723);
-    const colorCielo = Color(0xFF1A237E);
+    const Color colorAcento = Color(0xFFD84315);
+    const Color colorFondo = Color(0xFF181824);
+    const Color colorGlow = Color(0xFFFFD54F);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: colorFondo,
       appBar: AppBar(
         title: const Text('Área de los Topógrafos'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [colorTierra, colorCielo],
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              FlutterMap(
-                options: MapOptions(
-                  center: puntos.isNotEmpty ? puntos[0] : LatLng(-1.83, -78.18),
-                  zoom: 17,
+      body: Stack(
+        children: [
+          // SOLO ESTO SE CAPTURA COMO IMAGEN
+          Center(
+            child: AspectRatio(
+              aspectRatio: 1, // cuadrado (puedes ajustarlo)
+              child: RepaintBoundary(
+                key: repaintKey,
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: puntos.isNotEmpty ? puntos[0] : const LatLng(-1.83, -78.18),
+                    initialZoom: 15,
+                    interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+                    onMapReady: _ajustarVistaMarkers,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                      userAgentPackageName: 'com.example.mapeo_ec',
+                    ),
+                    if (puntos.length >= 3)
+                      PolygonLayer(
+                        polygons: [
+                          Polygon(
+                            points: [...puntos, puntos.first],
+                            color: colorAcento.withOpacity(0.30),
+                            borderColor: colorAcento,
+                            borderStrokeWidth: 4,
+                            isFilled: true,
+                          ),
+                        ],
+                      ),
+                    MarkerLayer(
+                      markers: puntos.map((p) => Marker(
+                        point: p,
+                        width: 65,
+                        height: 65,
+                        child: const Icon(Icons.person_pin_circle, color: Color(0xFFD84315), size: 55),
+                      )).toList(),
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          ),
+          // --- CONTADOR DE TOPOGRAFOS ACTIVO ---
+          Positioned(
+            left: 18,
+            bottom: 28,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.82),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(color: colorGlow.withOpacity(0.25), blurRadius: 12, spreadRadius: 2)
+                ],
+                border: Border.all(color: colorGlow.withOpacity(0.11), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TileLayer(
-                    urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    subdomains: const ['a', 'b', 'c'],
-                    userAgentPackageName: 'com.example.mapeo_ec',
+                  const Icon(Icons.people_alt_rounded, color: colorGlow, size: 28),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${puntos.length} topógrafos activos',
+                    style: const TextStyle(
+                      color: colorGlow,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
+                      letterSpacing: 0.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          blurRadius: 6,
+                          offset: Offset(1, 2),
+                        ),
+                      ],
+                    ),
                   ),
-                  MarkerLayer(
-                    markers: puntos
-                        .map((p) => Marker(
-                              point: p,
-                              width: 36,
-                              height: 36,
-                              child: const Icon(Icons.person_pin_circle, color: Colors.red, size: 30),
-                            ))
-                        .toList(),
-                  ),
-                  if (puntos.length >= 3)
-                    PolygonLayer(polygons: [
-                      Polygon(
-                        points: [...puntos, puntos.first],
-                        color: Colors.blue.withOpacity(0.32),
-                        borderColor: Colors.amber,
-                        borderStrokeWidth: 3,
-                        isFilled: true,
-                      )
-                    ]),
                 ],
               ),
-              // Banner de "Esperando posiciones..." (si no hay)
-              if (puntos.isEmpty)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 26),
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
-                    ),
-                    child: const Text(
-                      'Esperando posiciones de topógrafos...',
-                      style: TextStyle(color: Colors.white70, fontSize: 18),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButton: puntos.length >= 3
           ? FloatingActionButton.extended(
-              heroTag: 'mostrar-area',
-              backgroundColor: Colors.black87,
-              onPressed: () => _mostrarDialogoArea(context),
-              icon: const Icon(Icons.select_all, color: Colors.amber),
-              label: Text(
-                'Área: ${area?.toStringAsFixed(2) ?? "0"} m²',
-                style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-              ),
+              heroTag: 'guardar-poligono',
+              backgroundColor: Colors.blue,
+              icon: const Icon(Icons.save_alt, color: Colors.white),
+              label: const Text("Guardar polígono con imagen"),
+              onPressed: _guardarPoligonoYSubir,
             )
           : null,
     );

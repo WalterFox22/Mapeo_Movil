@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_background/flutter_background.dart';
 
 class TrackingPageSimple extends StatefulWidget {
   const TrackingPageSimple({super.key});
@@ -12,8 +13,7 @@ class TrackingPageSimple extends StatefulWidget {
 }
 
 class _TrackingPageSimpleState extends State<TrackingPageSimple> {
-  // Usamos un booleano para un manejo de estado más limpio
-  bool _isTracking = false; 
+  bool _isTracking = false;
   String _currentLocation = 'Aún no se ha iniciado el rastreo.';
   String _errorMessage = '';
   Timer? _timer;
@@ -21,10 +21,10 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
   @override
   void dispose() {
     _timer?.cancel();
+    FlutterBackground.disableBackgroundExecution();
     super.dispose();
   }
 
-  // La lógica de permisos y rastreo se mantiene intacta
   Future<void> _pedirPermisos() async {
     LocationPermission permiso = await Geolocator.checkPermission();
     if (permiso == LocationPermission.denied || permiso == LocationPermission.deniedForever) {
@@ -38,6 +38,19 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
   Future<void> iniciarRastreo() async {
     try {
       await _pedirPermisos();
+
+      // --- Inicializar flutter_background con notificación ---
+    final androidConfig = const FlutterBackgroundAndroidConfig(
+  notificationTitle: "Rastreo activo",
+  notificationText: "La app está rastreando tu ubicación en segundo plano.",
+);
+
+
+      final backgroundInit = await FlutterBackground.initialize(androidConfig: androidConfig);
+      if (backgroundInit) {
+        await FlutterBackground.enableBackgroundExecution();
+      }
+
       setState(() {
         _isTracking = true;
         _errorMessage = '';
@@ -60,7 +73,7 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
               'user_id': user.id,
               'lat': position.latitude,
               'lng': position.longitude,
-              'timestamp': DateTime.now().toIso8601String(),
+              'timestamp': DateTime.now().toUtc().toIso8601String(),
             });
           }
         } catch (e) {
@@ -80,6 +93,9 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
 
   Future<void> detenerRastreo() async {
     _timer?.cancel();
+    if (await FlutterBackground.isBackgroundExecutionEnabled) {
+      await FlutterBackground.disableBackgroundExecution();
+    }
     setState(() {
       _isTracking = false;
       _currentLocation = 'El rastreo ha sido detenido.';
@@ -111,13 +127,8 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // --- 1. INDICADOR VISUAL DE ESTADO ---
                 _buildStatusIndicator(),
-
-                // --- 2. TARJETA DE INFORMACIÓN DE UBICACIÓN ---
                 _buildLocationInfoCard(),
-
-                // --- 3. BOTONES DE ACCIÓN ---
                 _buildActionButtons(),
               ],
             ),
@@ -127,7 +138,6 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
     );
   }
 
-  // Widget para el indicador de estado
   Widget _buildStatusIndicator() {
     return Column(
       children: [
@@ -150,7 +160,6 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
     );
   }
 
-  // Widget para la tarjeta de información
   Widget _buildLocationInfoCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -183,12 +192,10 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
     );
   }
 
-  // Widget para los botones
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Botón de Iniciar
         ElevatedButton.icon(
           icon: const Icon(Icons.play_arrow),
           label: const Text('Iniciar'),
@@ -198,10 +205,9 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
             textStyle: const TextStyle(fontSize: 18),
           ),
-          onPressed: _isTracking ? null : iniciarRastreo, // Se deshabilita si ya está activo
+          onPressed: _isTracking ? null : iniciarRastreo,
         ),
         const SizedBox(width: 20),
-        // Botón de Detener
         ElevatedButton.icon(
           icon: const Icon(Icons.stop),
           label: const Text('Detener'),
@@ -211,7 +217,7 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
             textStyle: const TextStyle(fontSize: 18),
           ),
-          onPressed: !_isTracking ? null : detenerRastreo, // Se deshabilita si no está activo
+          onPressed: !_isTracking ? null : detenerRastreo,
         ),
       ],
     );

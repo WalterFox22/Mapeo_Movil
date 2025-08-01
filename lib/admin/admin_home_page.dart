@@ -192,7 +192,6 @@ class AdminHomePage extends StatelessWidget {
                 children: [
                   ListTile(leading: const Icon(Icons.image_outlined), title: const Text('Galería de terrenos'), onTap: () => _navigateTo(context, const GaleriaTerrenosPage())),
                   ListTile(leading: const Icon(Icons.map_outlined), title: const Text('Mapa de topógrafos'), onTap: () => _navigateTo(context, const MapaTopografosPage())),
-                  ListTile(leading: const Icon(Icons.landscape_outlined), title: const Text('Ver terrenos guardados'), onTap: () => _navigateTo(context, const TerrenosPage())),
                   ListTile(leading: const Icon(Icons.my_location), title: const Text('Probar rastreo'), onTap: () => _navigateTo(context, const TrackingPageSimple())),
                   ListTile(leading: const Icon(Icons.polyline_outlined), title: const Text('Probar polígono'), onTap: () => _navigateTo(context, const PruebaTerrenoPage())),
                   ListTile(leading: const Icon(Icons.select_all_outlined),title: const Text('Área entre topógrafos'),onTap: () => _navigateTo(context, const AreaTopografosPage()),),
