@@ -229,9 +229,11 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                      userAgentPackageName: 'com.example.mapeo_ec',
-                    ),
+                    urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
+                    userAgentPackageName: 'com.example.mapeo_ec',
+                  ),
+
                     if (puntos.length >= 3)
                       PolygonLayer(
                         polygons: [

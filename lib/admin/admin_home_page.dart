@@ -8,7 +8,7 @@ import '../mapeo/tracking_page.dart';
 import '../testeo/prueba_terreno_page.dart';
 import '../mapeo/galeria_terrenos_page.dart'; 
 import 'mapa_area_topografos_page.dart'; 
-
+import 'crud_usuarios_page.dart'; // Importa la página de gestión de usuarios
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
 
@@ -195,6 +195,7 @@ class AdminHomePage extends StatelessWidget {
                   ListTile(leading: const Icon(Icons.my_location), title: const Text('Probar rastreo'), onTap: () => _navigateTo(context, const TrackingPageSimple())),
                   ListTile(leading: const Icon(Icons.polyline_outlined), title: const Text('Probar polígono'), onTap: () => _navigateTo(context, const PruebaTerrenoPage())),
                   ListTile(leading: const Icon(Icons.select_all_outlined),title: const Text('Área entre topógrafos'),onTap: () => _navigateTo(context, const AreaTopografosPage()),),
+                  ListTile(leading: const Icon(Icons.people_alt),title: const Text('Gestión de usuarios'),onTap: () => _navigateTo(context, const CrudUsuariosPage()),),
                 ],
               ),
             ),
