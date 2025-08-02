@@ -124,10 +124,11 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
                   children: [
                     // --- 1. MAPA BASE OSCURO ---
                     TileLayer(
-                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                      urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      subdomains: const ['a', 'b', 'c'],
                       userAgentPackageName: 'com.example.mapeo_ec',
                     ),
-                    
+
                     // --- 2. CAPA DEL POLÍGONO CON NUEVOS COLORES ---
                     if (poligonoActual.isNotEmpty)
                       PolygonLayer(

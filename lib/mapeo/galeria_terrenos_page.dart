@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ======= GALERÍA DE TERRENOS =======
 class GaleriaTerrenosPage extends StatefulWidget {
   const GaleriaTerrenosPage({super.key});
 
@@ -10,6 +9,14 @@ class GaleriaTerrenosPage extends StatefulWidget {
 }
 
 class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
+  late Future<List<Map<String, dynamic>>> _futureTerrenos;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureTerrenos = _cargarTerrenos();
+  }
+
   Future<List<Map<String, dynamic>>> _cargarTerrenos() async {
     try {
       final response = await Supabase.instance.client
@@ -24,12 +31,26 @@ class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
     }
   }
 
+  void _refresh() {
+    setState(() {
+      _futureTerrenos = _cargarTerrenos();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Galería de Terrenos')),
+      appBar: AppBar(
+        title: const Text('Galería de Terrenos'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refresh,
+          )
+        ],
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _cargarTerrenos(),
+        future: _futureTerrenos,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -61,11 +82,14 @@ class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
               return Card(
                 elevation: 2,
                 child: InkWell(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    final eliminado = await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => TerrenoImagenDetallePage(terreno: t)),
+                      MaterialPageRoute(
+                        builder: (_) => TerrenoImagenDetallePage(terreno: t),
+                      ),
                     );
+                    if (eliminado == true) _refresh();
                   },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -115,19 +139,80 @@ class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
 }
 
 // ======= PÁGINA DE IMAGEN DETALLADA =======
-class TerrenoImagenDetallePage extends StatelessWidget {
+class TerrenoImagenDetallePage extends StatefulWidget {
   final Map<String, dynamic> terreno;
   const TerrenoImagenDetallePage({super.key, required this.terreno});
 
   @override
+  State<TerrenoImagenDetallePage> createState() =>
+      _TerrenoImagenDetallePageState();
+}
+
+class _TerrenoImagenDetallePageState extends State<TerrenoImagenDetallePage> {
+  bool _esAdmin = false;
+  bool _eliminando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarAdmin();
+  }
+
+  Future<void> _cargarAdmin() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final res = await Supabase.instance.client
+        .from('users')
+        .select('rol')
+        .eq('id', user.id)
+        .maybeSingle();
+    setState(() {
+      _esAdmin = res?['rol'] == 'admin';
+    });
+  }
+
+  Future<void> _eliminar() async {
+    setState(() => _eliminando = true);
+    final id = widget.terreno['id'];
+    final url = widget.terreno['img_url'] as String?;
+    try {
+      await Supabase.instance.client.from('terrenos').delete().eq('id', id);
+      // Intenta borrar la imagen del storage (solo si fue subida en el bucket imagenesterrenos)
+      if (url != null && url.contains('/storage/v1/object/public/imagenesterrenos/')) {
+        // Extrae la ruta relativa en el bucket
+        final ruta = url.split('/storage/v1/object/public/imagenesterrenos/').last;
+        await Supabase.instance.client.storage
+            .from('imagenesterrenos')
+            .remove([ruta]);
+      }
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terreno eliminado.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _eliminando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error eliminando: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final url = terreno['img_url'] as String?;
-    final areaRaw = terreno['area'];
-    double? area = areaRaw is int ? areaRaw.toDouble() : areaRaw is double ? areaRaw : null;
-    final fecha = terreno['timestamp']?.toString().substring(0, 10) ?? "";
+    final url = widget.terreno['img_url'] as String?;
+    final areaRaw = widget.terreno['area'];
+    double? area =
+        areaRaw is int ? areaRaw.toDouble() : areaRaw is double ? areaRaw : null;
+    final fecha = widget.terreno['timestamp']?.toString().substring(0, 10) ?? "";
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Imagen del Terreno'), backgroundColor: Colors.black),
+      appBar: AppBar(
+          title: const Text('Imagen del Terreno'),
+          backgroundColor: Colors.black),
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
@@ -137,7 +222,8 @@ class TerrenoImagenDetallePage extends StatelessWidget {
                   ? InteractiveViewer(
                       child: Image.network(url, fit: BoxFit.contain),
                     )
-                  : const Icon(Icons.broken_image, color: Colors.white, size: 120),
+                  : const Icon(Icons.broken_image,
+                      color: Colors.white, size: 120),
             ),
             Container(
               width: double.infinity,
@@ -148,11 +234,57 @@ class TerrenoImagenDetallePage extends StatelessWidget {
                 children: [
                   Text('Área: ${area != null ? area.toStringAsFixed(2) : "?"} m²',
                       style: const TextStyle(fontSize: 16, color: Colors.white)),
-                  Text('Fecha: $fecha', style: const TextStyle(fontSize: 14, color: Colors.white70)),
-                  
+                  Text('Fecha: $fecha',
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.white70)),
                 ],
               ),
             ),
+            if (_esAdmin)
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  ),
+                  icon: _eliminando
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.delete),
+                  label: Text(_eliminando ? "Eliminando..." : "Eliminar terreno"),
+                  onPressed: _eliminando
+                      ? null
+                      : () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Eliminar terreno'),
+                              content: const Text(
+                                  '¿Estás seguro de que quieres eliminar este terreno? Esto también eliminará la imagen.'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, false),
+                                    child: const Text('Cancelar')),
+                                ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red),
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, true),
+                                    child: const Text('Eliminar')),
+                              ],
+                            ),
+                          );
+                          if (ok == true) await _eliminar();
+                        },
+                ),
+              ),
           ],
         ),
       ),
