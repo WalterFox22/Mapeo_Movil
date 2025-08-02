@@ -4,9 +4,9 @@ import 'login_page.dart';
 import 'admin/admin_home_page.dart';
 import 'topo/topografo_home_page.dart';
 
-const String supabaseUrl = 'https://smgkcwgeyotbjujruzuj.supabase.co';
+const String supabaseUrl = 'https://ravcaucagfhfpxmhjznv.supabase.co';
 const String supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtZ2tjd2dleW90Ymp1anJ1enVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDY5MzQsImV4cCI6MjA2ODE4MjkzNH0.dl64I9eCBxnWajBy_s3rGMad5x03b40aVq8Rt5a7V-w'; // Reemplaza con tu clave
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJhdmNhdWNhZ2ZoZnB4bWhqem52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwOTEwNDMsImV4cCI6MjA2OTY2NzA0M30.Z1GimsGjSkHgITG3-wAqTlXd7jQXPsK12q7ruu6jinI';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
