@@ -29,11 +29,20 @@ dependencies:
   intl: ^0.18.1
   flutter_dotenv: ^5.0.2
   uuid: ^4.3.3
+  flutter_background: ^1.0.7
+ 
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1 
 
 flutter:
   uses-material-design: true
+
+flutter_icons:
+  android: true
+  ios: false # true si quieres también para iOS
+  image_path: "assets/icon.jpeg" # Pon aquí la ruta real de tu ícono
