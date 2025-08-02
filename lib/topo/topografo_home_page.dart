@@ -1,11 +1,10 @@
-import 'dart:ui'; // Necesario para ImageFilter.blur
+import 'dart:ui'; 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../login_page.dart';
 import '../mapeo/mapa_topografos_page.dart';
 import '../mapeo/terrenos_page.dart';
 import '../mapeo/tracking_page.dart';
-// Importa cualquier otra página específica del topógrafo si la tienes
 
 class TopografoHomePage extends StatelessWidget {
   const TopografoHomePage({super.key});
@@ -14,14 +13,13 @@ class TopografoHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
 
-    // --- NUEVA PALETA DE COLORES "BOSQUE Y AMANECER" para el Topógrafo ---
-    const Color colorVerdeProfundo = Color(0xFF1B5E20); // Verde oscuro, terroso
-    const Color colorAmarilloClaro = Color(0xFFFFECB3); // Amarillo suave, como la luz del amanecer
-    const Color colorAzulCieloClaro = Color(0xFF81D4FA); // Azul claro, sereno
-    const Color colorAcentoPrimario = Color(0xFF69F0AE); // Un verde brillante para acentos y botones
+    const Color colorVerdeProfundo = Color(0xFF1B5E20); 
+    const Color colorAmarilloClaro = Color(0xFFFFECB3); 
+    const Color colorAzulCieloClaro = Color(0xFF81D4FA); 
+    const Color colorAcentoPrimario = Color(0xFF69F0AE); 
 
     return Scaffold(
-      extendBodyBehindAppBar: true, // Permite que el body se extienda detrás del AppBar transparente
+      extendBodyBehindAppBar: true, 
       appBar: AppBar(
         title: const Text(
           'GeoMapper Pro',
@@ -31,32 +29,32 @@ class TopografoHomePage extends StatelessWidget {
             letterSpacing: 1.2,
           ),
         ),
-        backgroundColor: Colors.transparent, // AppBar transparente
+        backgroundColor: Colors.transparent, 
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
-      drawer: _buildCustomDrawer(context, user, [colorVerdeProfundo, colorAzulCieloClaro]), // Pasamos los colores al drawer
+      drawer: _buildCustomDrawer(context, user, [colorVerdeProfundo, colorAzulCieloClaro]), 
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [colorVerdeProfundo, colorAzulCieloClaro], // Gradiente principal de fondo
-            begin: Alignment.bottomCenter, // Empezar con el color terroso abajo
-            end: Alignment.topCenter,     // Terminar con el color cielo arriba
+            colors: [colorVerdeProfundo, colorAzulCieloClaro], 
+            begin: Alignment.bottomCenter, 
+            end: Alignment.topCenter,     
           ),
         ),
         child: SafeArea(
-          child: ListView( // Usamos ListView para el scroll y la estructura vertical
-            padding: const EdgeInsets.symmetric(vertical: 20.0), // Padding general
+          child: ListView( 
+            padding: const EdgeInsets.symmetric(vertical: 20.0), 
             children: [
-              // --- 1. SECCIÓN PRINCIPAL (HERO) CON ICONO, BIENVENIDA Y ESTADÍSTICAS RÁPIDAS ---
+              
               _buildHeroSection(context, user, colorAcentoPrimario, colorAmarilloClaro),
 
               const Divider(color: Colors.white24, height: 60, indent: 24, endIndent: 24),
 
-              // --- 2. SECCIÓN DE ACCIONES RÁPIDAS (SIMILAR A "PANEL DE CONTROL" DEL ADMIN) ---
+              
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
@@ -94,7 +92,7 @@ class TopografoHomePage extends StatelessWidget {
 
               const Divider(color: Colors.white24, height: 60, indent: 24, endIndent: 24),
 
-              // --- 3. CITA INSPIRADORA O CONSEJO ---
+              
               _buildQuoteSection(colorAmarilloClaro),
 
               const SizedBox(height: 40),
@@ -105,9 +103,7 @@ class TopografoHomePage extends StatelessWidget {
     );
   }
 
-  // --- MÉTODOS AUXILIARES ---
-
-  // Drawer actualizado con la nueva paleta y efecto
+  
   Widget _buildCustomDrawer(BuildContext context, User? user, List<Color> gradientColors) {
     const Color colorVerdeProfundoDrawer = Color(0xFF1B5E20);
     const Color colorAzulCieloClaroDrawer = Color(0xFF81D4FA);
@@ -115,8 +111,8 @@ class TopografoHomePage extends StatelessWidget {
 
     return Drawer(
       child: Container(
-        // Color de fondo del drawer que complementa el gradiente
-        color: Colors.grey[900], // Un gris oscuro para el cuerpo del drawer
+        
+        color: Colors.grey[900], 
         child: Column(
           children: [
             Container(
@@ -124,7 +120,7 @@ class TopografoHomePage extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: gradientColors, // Usa los colores pasados
+                  colors: gradientColors, 
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                 ),
@@ -135,7 +131,7 @@ class TopografoHomePage extends StatelessWidget {
                   CircleAvatar(
                     radius: 35,
                     backgroundColor: colorAcentoPrimarioDrawer.withOpacity(0.4),
-                    child: Icon(Icons.person_pin_circle_outlined, size: 40, color: Colors.white), // Ícono más específico de topógrafo
+                    child: Icon(Icons.person_pin_circle_outlined, size: 40, color: Colors.white), 
                   ),
                   const SizedBox(height: 12),
                   const Text('Topógrafo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -190,7 +186,7 @@ class TopografoHomePage extends StatelessWidget {
   }
 
   void _navigateTo(BuildContext context, Widget page) {
-    Navigator.pop(context); // Cierra el drawer
+    Navigator.pop(context); 
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
 
@@ -198,7 +194,7 @@ class TopografoHomePage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1), // Fondo más suave para los ítems del drawer
+        color: color.withOpacity(0.1), 
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
@@ -223,7 +219,7 @@ class TopografoHomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Ícono principal de topógrafo con efecto de aura y blur
+          
           Stack(
             alignment: Alignment.center,
             children: [
@@ -232,7 +228,7 @@ class TopografoHomePage extends StatelessWidget {
                 height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: accentColor.withOpacity(0.15), // Aura sutil con color de acento
+                  color: accentColor.withOpacity(0.15), 
                 ),
               ),
               ClipRRect(
@@ -247,10 +243,10 @@ class TopografoHomePage extends StatelessWidget {
                 height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.black.withOpacity(0.2), // Fondo oscuro para el ícono
+                  color: Colors.black.withOpacity(0.2), 
                   border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
                 ),
-                child: Icon(Icons.location_on_sharp, size: 70, color: Colors.white.withOpacity(0.9)), // Ícono de pin o mapa
+                child: Icon(Icons.location_on_sharp, size: 70, color: Colors.white.withOpacity(0.9)), 
               ),
             ],
           ),
@@ -272,7 +268,7 @@ class TopografoHomePage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 30),
-          // Botón principal de acción
+          
           ElevatedButton.icon(
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackingPageSimple()));
@@ -283,7 +279,7 @@ class TopografoHomePage extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: accentColor, // Usa el color de acento principal
+              backgroundColor: accentColor, 
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -291,7 +287,7 @@ class TopografoHomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-          // Sección: Estadísticas rápidas
+          
           _buildQuickStats(secondaryAccent),
         ],
       ),
@@ -302,7 +298,7 @@ class TopografoHomePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: secondaryAccent.withOpacity(0.1), // Fondo ligero con el color secundario
+        color: secondaryAccent.withOpacity(0.1), 
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
@@ -311,23 +307,22 @@ class TopografoHomePage extends StatelessWidget {
         children: [
           _buildStatItem(Icons.leaderboard_outlined, '52', 'Terrenos', secondaryAccent),
           _buildStatItem(Icons.timeline_outlined, '120h', 'Rastreo', secondaryAccent),
-          _buildStatItem(Icons.groups_outlined, '3', 'Equipos', secondaryAccent), // Puede ser el número de topógrafos que rastrea
+          _buildStatItem(Icons.groups_outlined, '3', 'Equipos', secondaryAccent), 
         ],
       ),
     );
   }
 
-  // Widget de ayuda para las secciones de "Acciones Rápidas" (similar al _buildFeatureInfo del Admin)
   Widget _buildFeatureInfo({required IconData icon, required Color color, required String title, required String description, required VoidCallback onTap}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // Efecto de vidrio esmerilado
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), 
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08), // Un poco más opaco para visibilidad en el fondo
+              color: Colors.white.withOpacity(0.08), 
               borderRadius: BorderRadius.circular(15),
               border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
             ),
@@ -348,14 +343,13 @@ class TopografoHomePage extends StatelessWidget {
     );
   }
 
-  // Sección de Cita inspiradora o consejo
   Widget _buildQuoteSection(Color accentColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.15), // Fondo sutil con el color de acento
+          color: accentColor.withOpacity(0.15), 
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
         ),
