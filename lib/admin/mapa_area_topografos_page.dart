@@ -94,8 +94,6 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
     }
     return (total * R * R / 2).abs();
   }
-
-  // Captura la imagen del mapa real (sin overlays)
   Future<Uint8List?> _capturarPoligonoComoImagen() async {
     try {
       RenderRepaintBoundary boundary =
@@ -138,8 +136,6 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
         }
         return;
       }
-
-      // Obtén la URL pública
       final url = Supabase.instance.client.storage
           .from('imagenesterrenos')
           .getPublicUrl(storagePath);
@@ -213,10 +209,9 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
       ),
       body: Stack(
         children: [
-          // SOLO ESTO SE CAPTURA COMO IMAGEN
           Center(
             child: AspectRatio(
-              aspectRatio: 1, // cuadrado (puedes ajustarlo)
+              aspectRatio: 1, 
               child: RepaintBoundary(
                 key: repaintKey,
                 child: FlutterMap(
@@ -259,7 +254,7 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
               ),
             ),
           ),
-          // --- CONTADOR DE TOPOGRAFOS ACTIVO ---
+          
           Positioned(
             left: 18,
             bottom: 28,
@@ -301,6 +296,7 @@ class _AreaTopografosPageState extends State<AreaTopografosPage> {
           ),
         ],
       ),
+      
       floatingActionButton: puntos.length >= 3
           ? FloatingActionButton.extended(
               heroTag: 'guardar-poligono',

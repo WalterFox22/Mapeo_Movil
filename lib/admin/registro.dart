@@ -37,11 +37,10 @@ class _RegistroPageState extends State<RegistroPage> {
       );
 
       if (res.user != null) {
-        // Ya se insertará el rol automáticamente cuando inicie sesión con LoginPage
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('¡Registro exitoso! Revisa tu correo para confirmar.')),
         );
-        Navigator.pop(context); // Volver al login
+        Navigator.pop(context); 
       }
     } on AuthException catch (e) {
       setState(() => _error = e.message);

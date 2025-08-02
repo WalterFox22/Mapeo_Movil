@@ -38,8 +38,6 @@ class _TrackingPageSimpleState extends State<TrackingPageSimple> {
   Future<void> iniciarRastreo() async {
     try {
       await _pedirPermisos();
-
-      // --- Inicializar flutter_background con notificación ---
     final androidConfig = const FlutterBackgroundAndroidConfig(
   notificationTitle: "Rastreo activo",
   notificationText: "La app está rastreando tu ubicación en segundo plano.",

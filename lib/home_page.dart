@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
-import 'mapeo/tracking_page.dart'; // <--- Asegúrate de tener este archivo
-import 'mapeo/mapa_topografos_page.dart'; // <--- Asegúrate de tener este archivo
-import 'mapeo/terrenos_page.dart'; // <--- Asegúrate de tener este archivo
-import 'testeo/prueba_terreno_page.dart'; // <--- Asegúrate de tener este archivo
+import 'mapeo/tracking_page.dart'; 
+import 'mapeo/mapa_topografos_page.dart'; 
+import 'mapeo/terrenos_page.dart'; 
+import 'testeo/prueba_terreno_page.dart'; 
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

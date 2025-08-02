@@ -47,7 +47,6 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
         if (u['users'] != null && u['users']['rol'] == 'topografo') {
           final rawFecha = u['timestamp'] ?? '';
           final fecha = DateTime.tryParse(rawFecha)?.toUtc();
-          // Solo usuarios con ubicación en el último minuto
           if (fecha != null && ahora.difference(fecha).inSeconds <= 60) {
             if (!latestByUser.containsKey(u['user_id'])) {
               latestByUser[u['user_id']] = u;
@@ -92,15 +91,15 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Definimos los colores del tema para fácil acceso
-    const Color colorPrimario = Color(0xFF283593); // Índigo
-    const Color colorAcento = Color(0xFFD84315);   // Naranja
+    
+    const Color colorPrimario = Color(0xFF283593); 
+    const Color colorAcento = Color(0xFFD84315);   
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 0, 0, 0), // Fondo oscuro para el loading
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0), 
       appBar: AppBar(
         title: const Text('Mapa de Topógrafos'),
-        backgroundColor: colorPrimario, // Color del tema
+        backgroundColor: colorPrimario, 
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -122,14 +121,12 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
                     interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
                   ),
                   children: [
-                    // --- 1. MAPA BASE OSCURO ---
                     TileLayer(
                       urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                       subdomains: const ['a', 'b', 'c'],
                       userAgentPackageName: 'com.example.mapeo_ec',
                     ),
 
-                    // --- 2. CAPA DEL POLÍGONO CON NUEVOS COLORES ---
                     if (poligonoActual.isNotEmpty)
                       PolygonLayer(
                         polygons: [
@@ -143,7 +140,6 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
                         ],
                       ),
 
-                    // --- 3. CAPA DE MARCADORES PERSONALIZADOS ---
                     MarkerLayer(
                       markers: ubicaciones.map((u) {
                         final correo = u['users']?['email'] ?? 'Topógrafo';
@@ -171,7 +167,6 @@ class _MapaTopografosPageState extends State<MapaTopografosPage> {
     );
   }
 
-  // --- WIDGET PARA LOS MARCADORES PERSONALIZADOS ---
   Widget _buildSurveyorMarker(String email, Color color) {
     return Tooltip(
       message: email,

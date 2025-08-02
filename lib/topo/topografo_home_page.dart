@@ -5,8 +5,8 @@ import '../login_page.dart';
 import '../mapeo/mapa_topografos_page.dart';
 import '../mapeo/terrenos_page.dart';
 import '../mapeo/tracking_page.dart';
-import '../mapeo/galeria_terrenos_page.dart'; // ← ¡Importa tu galería!
-// ← ¡Importa la lista (código abajo)!
+import '../mapeo/galeria_terrenos_page.dart'; 
+
 
 class TopografoHomePage extends StatelessWidget {
   const TopografoHomePage({super.key});

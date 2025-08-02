@@ -7,19 +7,18 @@ import '../mapeo/tracking_page.dart';
 import '../testeo/prueba_terreno_page.dart';
 import '../mapeo/galeria_terrenos_page.dart'; 
 import 'mapa_area_topografos_page.dart'; 
-import 'registro.dart'; // asegúrate de que el path esté correcto
+import 'registro.dart'; 
 import 'crud_usuarios_page.dart';
+
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
-
-    // --- 1. NUEVA PALETA DE COLORES "TIERRA Y CIELO NOCTURNO" ---
-    const Color colorTierra = Color(0xFF3E2723); // Marrón oscuro
-    const Color colorCielo = Color(0xFF1A237E);  // Azul noche
-    const Color colorAcento = Color(0xFFFFD54F); // Dorado/Arena pálido
+    const Color colorTierra = Color(0xFF3E2723); 
+    const Color colorCielo = Color(0xFF1A237E);  
+    const Color colorAcento = Color(0xFFFFD54F); 
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -40,11 +39,9 @@ class AdminHomePage extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          // Usamos un ListView para la estructura vertical y el scroll
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 20.0),
             children: [
-              // --- 2. EL HÉROE VISUAL: ÍCONO CON AURA Y BIENVENIDA ---
               Column(
                 children: [
                   Stack(
@@ -91,8 +88,6 @@ class AdminHomePage extends StatelessWidget {
               ),
               
               const Divider(color: Colors.white24, height: 60, indent: 24, endIndent: 24),
-
-              // --- 3. SECCIÓN INFORMATIVA "DATOS IMPORTANTES" ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
@@ -130,8 +125,7 @@ class AdminHomePage extends StatelessWidget {
       ),
     );
   }
-
-  // Widget de ayuda para la sección informativa
+  
   Widget _buildFeatureInfo({required IconData icon, required Color color, required String title, required String description}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
@@ -155,7 +149,6 @@ class AdminHomePage extends StatelessWidget {
     );
   }
 
-  // Drawer actualizado para usar la nueva paleta de colores
   Widget _buildCustomDrawer(BuildContext context, User? user, List<Color> gradientColors) {
     return Drawer(
       child: Container(

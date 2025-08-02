@@ -67,9 +67,8 @@ class _TerrenosPageState extends State<TerrenosPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Paleta
-    const Color colorPrimario = Color(0xFF283593); // Índigo
-    const Color colorAcento = Color(0xFFD84315); // Naranja
+    const Color colorPrimario = Color(0xFF283593); 
+    const Color colorAcento = Color(0xFFD84315); 
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -181,7 +180,7 @@ class _TerrenosPageState extends State<TerrenosPage> {
   }
 }
 
-// --- DETALLE DEL TERRENO ---
+
 class TerrenoDetallePage extends StatelessWidget {
   final Map<String, dynamic> terreno;
   final VoidCallback onDelete;
@@ -189,7 +188,7 @@ class TerrenoDetallePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color colorAcento = Color(0xFFD84315); // Naranja
+    const Color colorAcento = Color(0xFFD84315); 
     final List puntos = terreno['puntos'] ?? [];
     final List<LatLng> poligono = puntos
         .map<LatLng>((p) => LatLng((p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()))
@@ -210,7 +209,7 @@ class TerrenoDetallePage extends StatelessWidget {
             tooltip: "Eliminar",
             onPressed: onDelete,
           ),
-          // Puedes agregar aquí un botón de editar si quieres
+          
         ],
       ),
       body: Container(

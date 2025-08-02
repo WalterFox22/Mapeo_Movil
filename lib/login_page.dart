@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Importa tus páginas de home personalizadas
 import 'admin/admin_home_page.dart';
 import 'topo/topografo_home_page.dart';
 
@@ -11,17 +10,16 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>(); // Key para el formulario
+  final _formKey = GlobalKey<FormState>(); 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   
   bool _loading = false;
   String _error = '';
-  bool _isPasswordObscured = true; // Estado para controlar la visibilidad del password
+  bool _isPasswordObscured = true; 
 
-  // FUNCIÓN DE LOGIN ADAPTADA:
   Future<void> login() async {
-    if (!_formKey.currentState!.validate()) return; // Valida el formulario
+    if (!_formKey.currentState!.validate()) return; 
 
     setState(() {
       _loading = true;
@@ -38,15 +36,13 @@ class _LoginPageState extends State<LoginPage> {
       if (response.session != null) {
         final user = response.user;
         if (user != null) {
-          // --- INSERCIÓN O AUTO-ASIGNACIÓN DE ROL ---
-          // 1. Busca si el usuario ya existe en la tabla users
+
           final existe = await Supabase.instance.client
               .from('users')
               .select()
               .eq('id', user.id)
               .maybeSingle();
 
-          // 2. Si no existe, lo inserta como topografo (excepto si es el admin)
           if (existe == null) {
             await Supabase.instance.client.from('users').insert({
               'id': user.id,
@@ -55,7 +51,6 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
 
-          // 3. Vuelve a consultar el rol para redireccionar correctamente
           final datos = await Supabase.instance.client
               .from('users')
               .select('rol')

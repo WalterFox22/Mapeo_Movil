@@ -138,7 +138,6 @@ class _GaleriaTerrenosPageState extends State<GaleriaTerrenosPage> {
   }
 }
 
-// ======= PÁGINA DE IMAGEN DETALLADA =======
 class TerrenoImagenDetallePage extends StatefulWidget {
   final Map<String, dynamic> terreno;
   const TerrenoImagenDetallePage({super.key, required this.terreno});
@@ -177,9 +176,9 @@ class _TerrenoImagenDetallePageState extends State<TerrenoImagenDetallePage> {
     final url = widget.terreno['img_url'] as String?;
     try {
       await Supabase.instance.client.from('terrenos').delete().eq('id', id);
-      // Intenta borrar la imagen del storage (solo si fue subida en el bucket imagenesterrenos)
+      
       if (url != null && url.contains('/storage/v1/object/public/imagenesterrenos/')) {
-        // Extrae la ruta relativa en el bucket
+        
         final ruta = url.split('/storage/v1/object/public/imagenesterrenos/').last;
         await Supabase.instance.client.storage
             .from('imagenesterrenos')

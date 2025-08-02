@@ -62,7 +62,6 @@ class _PruebaTerrenoPageState extends State<PruebaTerrenoPage> {
     });
   }
 
-  // Captura el widget del mapa como imagen
   Future<Uint8List?> _capturarPoligonoComoImagen() async {
     try {
       RenderRepaintBoundary boundary =
@@ -97,7 +96,6 @@ class _PruebaTerrenoPageState extends State<PruebaTerrenoPage> {
           fileOptions: const FileOptions(upsert: true),
         );
 
-    // Aquí: Si es String vacío, la subida FALLÓ.
     if (response == null || (response is String && response.isEmpty)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +105,6 @@ class _PruebaTerrenoPageState extends State<PruebaTerrenoPage> {
       return;
     }
 
-    // Obtén la URL pública
     final url = Supabase.instance.client.storage
         .from('imagenesterrenos')
         .getPublicUrl(storagePath);
@@ -174,7 +171,7 @@ class _PruebaTerrenoPageState extends State<PruebaTerrenoPage> {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 350)); // Para que el widget se pinte
+    await Future.delayed(const Duration(milliseconds: 350));
 
     final bytes = await _capturarPoligonoComoImagen();
     if (bytes != null) {
@@ -203,10 +200,9 @@ Widget build(BuildContext context) {
     ),
     body: Stack(
       children: [
-        // --- SOLO esto se captura como imagen ---
         Center(
           child: AspectRatio(
-            aspectRatio: 1, // 1:1 cuadrado (puedes cambiarlo)
+            aspectRatio: 1, 
             child: RepaintBoundary(
               key: repaintKey,
               child: FlutterMap(
@@ -265,7 +261,7 @@ Widget build(BuildContext context) {
             ),
           ),
         ),
-        // --- Tus overlays y botones quedan FUERA y NO se capturan ---
+        
         if (poligonoSimulado.isNotEmpty)
           Align(
             alignment: Alignment.topCenter,
