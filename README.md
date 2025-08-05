@@ -56,7 +56,7 @@ Mapeo Móvil es una aplicación creada en Flutter para ayudar a topógrafos y ad
 ## Enlaces Importantes
 
 - [Apk del sistema](https://drive.google.com/file/d/1yEwDJIlGskGjNRVocsW887YAY16XDES2/view?usp=sharing)
-- [Video demostrativo](enlace/video)
+- [Video demostrativo](https://youtu.be/UPoQx3X5ebU)
 - [App publicado en Amazon](https://www.amazon.com/dp/B0FKZLVRR7/ref=sr_1_1?sr=8-1)
 
 ---
